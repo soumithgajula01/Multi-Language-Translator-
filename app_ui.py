@@ -5,7 +5,7 @@ import pandas as pd
 # Page config
 st.set_page_config(page_title="Translator", page_icon="🌍", layout="wide")
 
-# 🎨 UI Styling + Mobile responsive
+# 🎨 UI Styling
 st.markdown("""
 <style>
 .main {
@@ -40,6 +40,11 @@ button {
     font-weight: 600;
 }
 
+/* Center headings */
+h1, h2, h3 {
+    text-align: center;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
     textarea {
@@ -53,7 +58,7 @@ button {
 """, unsafe_allow_html=True)
 
 # Title
-st.markdown("<h1 style='text-align:center;'>🌍 Multi-Language Translator</h1>", unsafe_allow_html=True)
+st.markdown("<h1>🌍 Multi-Language Translator</h1>", unsafe_allow_html=True)
 st.caption("Translate text instantly using AI")
 st.divider()
 
@@ -65,7 +70,7 @@ languages = {
     "Spanish": "es"
 }
 
-# Session state init
+# Session state
 if "history" not in st.session_state:
     st.session_state.history = []
 
@@ -81,19 +86,8 @@ if "source_lang" not in st.session_state:
 if "target_lang" not in st.session_state:
     st.session_state.target_lang = "French"
 
-# 🔁 Swap BEFORE widgets
-swap_btn = st.button("↔ Swap Languages")
-
-if swap_btn:
-    st.session_state.source_lang, st.session_state.target_lang = (
-        st.session_state.target_lang,
-        st.session_state.source_lang
-    )
-    st.session_state.text = st.session_state.result
-    st.session_state.result = ""
-
-# Dropdowns
-col1, col2 = st.columns(2)
+# 🔁 Language + Swap Layout (centered)
+col1, col2, col3 = st.columns([4,1,4])
 
 with col1:
     source_lang = st.selectbox(
@@ -103,11 +97,24 @@ with col1:
     )
 
 with col2:
+    swap_btn = st.button("↔", use_container_width=True)
+
+with col3:
     target_lang = st.selectbox(
         "🎯 Target",
         list(languages.keys()),
         key="target_lang"
     )
+
+# 🔁 Swap logic (SAFE)
+if swap_btn:
+    st.session_state.source_lang, st.session_state.target_lang = (
+        st.session_state.target_lang,
+        st.session_state.source_lang
+    )
+    st.session_state.text = st.session_state.result
+    st.session_state.result = ""
+    st.rerun()
 
 # Input
 st.session_state.text = st.text_area(
@@ -178,16 +185,10 @@ if translate_btn:
 
             st.session_state.history = st.session_state.history[-10:]
 
-# Output + Copy
+# Output
 if st.session_state.result:
     st.markdown("### 🌐 Translated Text")
     st.success(st.session_state.result)
-
-    st.markdown(f"""
-        <button onclick="navigator.clipboard.writeText(`{st.session_state.result}`)">
-        📋 Copy
-        </button>
-    """, unsafe_allow_html=True)
 
 # History
 st.divider()
