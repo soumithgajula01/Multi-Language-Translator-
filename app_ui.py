@@ -1,37 +1,47 @@
 import streamlit as st
-from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import MarianMTModel, MarianTokenizer
 import pandas as pd
-
-model_name = "t5-base"
-
-# Load model once
-@st.cache_resource
-def load_model():
-    tokenizer = T5Tokenizer.from_pretrained(model_name)
-    model = T5ForConditionalGeneration.from_pretrained(model_name)
-    return tokenizer, model
-
-tokenizer, model = load_model()
 
 # Page config
 st.set_page_config(page_title="Translator", page_icon="🌍", layout="centered")
 
-# Session state
-if "text" not in st.session_state:
-    st.session_state.text = ""
+st.title("🌍 Multi-Language Translator")
+st.markdown("---")
 
+# Supported languages
+languages = {
+    "English": "en",
+    "French": "fr",
+    "German": "de",
+    "Spanish": "es"
+}
+
+# Session state
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Title
-st.title("🌍 English → French Translator")
-st.markdown("---")
+# Model cache
+@st.cache_resource
+def load_model(src, tgt):
+    model_name = f"Helsinki-NLP/opus-mt-{src}-{tgt}"
+    tokenizer = MarianTokenizer.from_pretrained(model_name)
+    model = MarianMTModel.from_pretrained(model_name)
+    return tokenizer, model
 
-# Input (linked to session state properly)
-st.session_state.text = st.text_area("✏️ Enter English text:", value=st.session_state.text)
+# Dropdowns
+col1, col2 = st.columns(2)
 
-# Buttons (aligned properly)
-col1, col2 = st.columns([1, 1])
+with col1:
+    source_lang = st.selectbox("Source Language", list(languages.keys()))
+
+with col2:
+    target_lang = st.selectbox("Target Language", list(languages.keys()))
+
+# Input
+text = st.text_area("✏️ Enter text:")
+
+# Buttons
+col1, col2 = st.columns(2)
 
 with col1:
     translate_btn = st.button("Translate", use_container_width=True)
@@ -39,37 +49,49 @@ with col1:
 with col2:
     clear_btn = st.button("Clear", use_container_width=True)
 
-# ✅ Clear fix
+# Clear
 if clear_btn:
-    st.session_state.text = ""
     st.rerun()
 
-# Translate
+# Translation function
+def translate(text, src, tgt):
+    tokenizer, model = load_model(src, tgt)
+    inputs = tokenizer(text, return_tensors="pt", padding=True)
+    outputs = model.generate(**inputs)
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+# Translate logic
 if translate_btn:
-    if st.session_state.text.strip() == "":
+    if text.strip() == "":
         st.warning("⚠️ Please enter some text")
+    elif source_lang == target_lang:
+        st.warning("⚠️ Source and target languages must be different")
     else:
-        input_text = "translate English to French: " + st.session_state.text
-        input_ids = tokenizer.encode(input_text, return_tensors="pt")
+        src = languages[source_lang]
+        tgt = languages[target_lang]
 
         with st.spinner("Translating... ⏳"):
-            outputs = model.generate(
-                input_ids,
-                max_length=50,
-                num_beams=4,
-                early_stopping=True
-            )
+            # Direct translation if available
+            try:
+                result = translate(text, src, tgt)
+            except:
+                # Pivot via English
+                if src != "en" and tgt != "en":
+                    step1 = translate(text, src, "en")
+                    result = translate(step1, "en", tgt)
+                else:
+                    st.error("❌ Translation not supported")
+                    result = None
 
-        result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        if result:
+            st.markdown("### 🌐 Translated Text")
+            st.code(result)
 
-        st.markdown("### 🇫🇷 Translated Text")
-        st.code(result)
-
-        # Save history
-        st.session_state.history.append({
-            "input": st.session_state.text,
-            "output": result
-        })
+            # Save history
+            st.session_state.history.append({
+                "input": f"{source_lang}: {text}",
+                "output": f"{target_lang}: {result}"
+            })
 
 # History
 st.markdown("---")
@@ -79,8 +101,8 @@ if len(st.session_state.history) == 0:
     st.write("No translations yet.")
 else:
     for item in reversed(st.session_state.history[-5:]):
-        st.markdown(f"**Input:** {item['input']}")
-        st.markdown(f"**Output:** {item['output']}")
+        st.markdown(f"**{item['input']}**")
+        st.markdown(f"➡️ {item['output']}")
         st.markdown("---")
 
     # Download CSV
