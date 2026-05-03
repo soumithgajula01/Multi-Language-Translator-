@@ -5,8 +5,53 @@ import pandas as pd
 # Page config
 st.set_page_config(page_title="Translator", page_icon="🌍", layout="centered")
 
-st.title("🌍 Multi-Language Translator")
-st.markdown("---")
+# 🎨 Modern UI Styling
+st.markdown("""
+<style>
+.main {
+    background: linear-gradient(135deg, #0f172a, #020617);
+}
+
+.block-container {
+    padding-top: 2rem;
+    max-width: 800px;
+    margin: auto;
+}
+
+/* Glass effect */
+section[data-testid="stVerticalBlock"] > div {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Text area */
+textarea {
+    background-color: rgba(255,255,255,0.08) !important;
+    color: white !important;
+    border-radius: 10px !important;
+}
+
+/* Buttons */
+button {
+    border-radius: 10px !important;
+    height: 45px;
+    font-weight: 600;
+}
+
+/* Center headings */
+h1, h2, h3 {
+    text-align: center;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Title
+st.markdown("<h1>🌍 Multi-Language Translator</h1>", unsafe_allow_html=True)
+st.caption("Translate text instantly using AI")
+st.divider()
 
 # Supported languages
 languages = {
@@ -34,17 +79,17 @@ def load_model(src, tgt):
     model = MarianMTModel.from_pretrained(model_name)
     return tokenizer, model
 
-# Dropdowns
+# Language selection
 col1, col2 = st.columns(2)
 
 with col1:
-    source_lang = st.selectbox("Source Language", list(languages.keys()))
+    source_lang = st.selectbox("🌐 Source Language", list(languages.keys()))
 
 with col2:
-    target_lang = st.selectbox("Target Language", list(languages.keys()))
+    target_lang = st.selectbox("🎯 Target Language", list(languages.keys()))
 
-# Input (controlled)
-st.session_state.text = st.text_area("✏️ Enter text:", value=st.session_state.text)
+# Input
+st.session_state.text = st.text_area("✏️ Enter text:", value=st.session_state.text, height=120)
 
 # Buttons
 col1, col2 = st.columns(2)
@@ -55,7 +100,7 @@ with col1:
 with col2:
     clear_btn = st.button("Clear", use_container_width=True)
 
-# ✅ CLEAR FIX (clears everything)
+# Clear
 if clear_btn:
     st.session_state.text = ""
     st.session_state.result = ""
@@ -101,13 +146,13 @@ if translate_btn:
 
             st.session_state.history = st.session_state.history[-10:]
 
-# ✅ SHOW RESULT (only if exists)
+# Output (better UI)
 if st.session_state.result:
     st.markdown("### 🌐 Translated Text")
-    st.code(st.session_state.result)
+    st.success(st.session_state.result)
 
 # History
-st.markdown("---")
+st.divider()
 st.subheader("🧠 Translation History")
 
 if len(st.session_state.history) == 0:
