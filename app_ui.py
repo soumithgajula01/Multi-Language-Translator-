@@ -72,21 +72,8 @@ if "source_lang" not in st.session_state:
 if "target_lang" not in st.session_state:
     st.session_state.target_lang = "French"
 
-# 🔁 Swap button (SAFE — before selectboxes)
-swap_clicked = st.button("↔")
-
-if swap_clicked:
-    temp = st.session_state.source_lang
-    st.session_state.source_lang = st.session_state.target_lang
-    st.session_state.target_lang = temp
-
-    st.session_state.text = st.session_state.result
-    st.session_state.result = ""
-
-    st.rerun()
-
-# Language selection (centered layout)
-col1, col2, col3 = st.columns([4,1,4])
+# 🔁 Language selectors with centered swap
+col1, col2, col3 = st.columns([5,1,5])
 
 with col1:
     source_lang = st.selectbox(
@@ -95,12 +82,26 @@ with col1:
         key="source_lang"
     )
 
+with col2:
+    st.markdown("<br>", unsafe_allow_html=True)
+    swap_clicked = st.button("↔", use_container_width=True)
+
 with col3:
     target_lang = st.selectbox(
         "🎯 Target",
         list(languages.keys()),
         key="target_lang"
     )
+
+# Swap logic (SAFE)
+if swap_clicked:
+    st.session_state.source_lang, st.session_state.target_lang = (
+        st.session_state.target_lang,
+        st.session_state.source_lang
+    )
+    st.session_state.text = st.session_state.result
+    st.session_state.result = ""
+    st.rerun()
 
 # Input
 st.session_state.text = st.text_area(
@@ -171,10 +172,35 @@ if translate_btn:
 
             st.session_state.history = st.session_state.history[-10:]
 
-# Output
+# 📋 Output with mini copy button
 if st.session_state.result:
     st.markdown("### 🌐 Translated Text")
-    st.success(st.session_state.result)
+
+    st.markdown(f"""
+    <div style="
+        position: relative;
+        background: rgba(34,197,94,0.15);
+        padding: 16px;
+        border-radius: 10px;
+        color: #22c55e;
+        font-weight: 500;
+    ">
+        {st.session_state.result}
+        
+        <button onclick="navigator.clipboard.writeText(`{st.session_state.result}`)" 
+        style="
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 16px;
+        ">
+            📋
+        </button>
+    </div>
+    """, unsafe_allow_html=True)
 
 # History
 st.divider()
