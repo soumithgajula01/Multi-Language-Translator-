@@ -16,8 +16,6 @@ st.markdown("""
     max-width: 900px;
     margin: auto;
 }
-
-/* Glass effect */
 section[data-testid="stVerticalBlock"] > div {
     background: rgba(255,255,255,0.05);
     padding: 20px;
@@ -25,34 +23,22 @@ section[data-testid="stVerticalBlock"] > div {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.1);
 }
-
-/* Text area */
 textarea {
     background-color: rgba(255,255,255,0.08) !important;
     color: white !important;
     border-radius: 10px !important;
 }
-
-/* Buttons */
 button {
     border-radius: 10px !important;
     height: 45px;
     font-weight: 600;
 }
-
-/* Center headings */
 h1, h2, h3 {
     text-align: center;
 }
-
-/* Mobile */
 @media (max-width: 768px) {
-    textarea {
-        height: 150px !important;
-    }
-    button {
-        width: 100% !important;
-    }
+    textarea { height: 150px !important; }
+    button { width: 100% !important; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -86,7 +72,20 @@ if "source_lang" not in st.session_state:
 if "target_lang" not in st.session_state:
     st.session_state.target_lang = "French"
 
-# 🔁 Language + Swap Layout (centered)
+# 🔁 Swap button (SAFE — before selectboxes)
+swap_clicked = st.button("↔")
+
+if swap_clicked:
+    temp = st.session_state.source_lang
+    st.session_state.source_lang = st.session_state.target_lang
+    st.session_state.target_lang = temp
+
+    st.session_state.text = st.session_state.result
+    st.session_state.result = ""
+
+    st.rerun()
+
+# Language selection (centered layout)
 col1, col2, col3 = st.columns([4,1,4])
 
 with col1:
@@ -96,25 +95,12 @@ with col1:
         key="source_lang"
     )
 
-with col2:
-    swap_btn = st.button("↔", use_container_width=True)
-
 with col3:
     target_lang = st.selectbox(
         "🎯 Target",
         list(languages.keys()),
         key="target_lang"
     )
-
-# 🔁 Swap logic (SAFE)
-if swap_btn:
-    st.session_state.source_lang, st.session_state.target_lang = (
-        st.session_state.target_lang,
-        st.session_state.source_lang
-    )
-    st.session_state.text = st.session_state.result
-    st.session_state.result = ""
-    st.rerun()
 
 # Input
 st.session_state.text = st.text_area(
