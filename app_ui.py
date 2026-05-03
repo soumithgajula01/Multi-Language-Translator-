@@ -73,17 +73,26 @@ if "target_lang" not in st.session_state:
     st.session_state.target_lang = "French"
 
 # 🔁 Swap button (SAFE — before selectboxes)
-swap_clicked = st.button("↔")
+# Language selection (centered layout with swap in middle)
+col1, col2, col3 = st.columns([4,1,4])
 
-if swap_clicked:
-    temp = st.session_state.source_lang
-    st.session_state.source_lang = st.session_state.target_lang
-    st.session_state.target_lang = temp
+with col1:
+    source_lang = st.selectbox(
+        "🌐 Source",
+        list(languages.keys()),
+        key="source_lang"
+    )
 
-    st.session_state.text = st.session_state.result
-    st.session_state.result = ""
+with col2:
+    st.markdown("<br>", unsafe_allow_html=True)  # vertical alignment
+    swap_clicked = st.button("↔", use_container_width=True)
 
-    st.rerun()
+with col3:
+    target_lang = st.selectbox(
+        "🎯 Target",
+        list(languages.keys()),
+        key="target_lang"
+    )
 
 # Language selection (centered layout)
 col1, col2, col3 = st.columns([4,1,4])
