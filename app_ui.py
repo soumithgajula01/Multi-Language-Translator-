@@ -20,6 +20,9 @@ languages = {
 if "history" not in st.session_state:
     st.session_state.history = []
 
+if "text" not in st.session_state:
+    st.session_state.text = ""
+
 # Model cache
 @st.cache_resource
 def load_model(src, tgt):
@@ -37,8 +40,18 @@ with col1:
 with col2:
     target_lang = st.selectbox("Target Language", list(languages.keys()))
 
-# Input
-text = st.text_area("✏️ Enter text:")
+# 🔥 Input + Paste button layout
+col1, col2 = st.columns([5,1])
+
+with col1:
+    text = st.text_area("✏️ Enter text:", value=st.session_state.text)
+
+with col2:
+    paste_btn = st.button("📋 Paste")
+
+# Paste info (browser limitation)
+if paste_btn:
+    st.info("Use Ctrl+V (browser security restricts direct paste)")
 
 # Buttons
 col1, col2 = st.columns(2)
@@ -49,8 +62,9 @@ with col1:
 with col2:
     clear_btn = st.button("Clear", use_container_width=True)
 
-# Clear
+# ✅ FIXED Clear
 if clear_btn:
+    st.session_state.text = ""
     st.rerun()
 
 # Translation function
@@ -67,11 +81,13 @@ if translate_btn:
     elif source_lang == target_lang:
         st.warning("⚠️ Source and target languages must be different")
     else:
+        # store text
+        st.session_state.text = text
+
         src = languages[source_lang]
         tgt = languages[target_lang]
 
         with st.spinner("Translating... ⏳"):
-            # Direct translation if available
             try:
                 result = translate(text, src, tgt)
             except:
@@ -87,11 +103,15 @@ if translate_btn:
             st.markdown("### 🌐 Translated Text")
             st.code(result)
 
-            # Save history
-            st.session_state.history.append({
-                "input": f"{source_lang}: {text}",
-                "output": f"{target_lang}: {result}"
-            })
+            # ✅ Prevent duplicate history
+            if not st.session_state.history or st.session_state.history[-1]["input"] != text:
+                st.session_state.history.append({
+                    "input": f"{source_lang}: {text}",
+                    "output": f"{target_lang}: {result}"
+                })
+
+            # limit history
+            st.session_state.history = st.session_state.history[-10:]
 
 # History
 st.markdown("---")
