@@ -23,6 +23,9 @@ if "history" not in st.session_state:
 if "text" not in st.session_state:
     st.session_state.text = ""
 
+if "result" not in st.session_state:
+    st.session_state.result = ""
+
 # Model cache
 @st.cache_resource
 def load_model(src, tgt):
@@ -40,18 +43,8 @@ with col1:
 with col2:
     target_lang = st.selectbox("Target Language", list(languages.keys()))
 
-# 🔥 Input + Paste button layout
-col1, col2 = st.columns([5,1])
-
-with col1:
-    text = st.text_area("✏️ Enter text:", value=st.session_state.text)
-
-with col2:
-    paste_btn = st.button("📋 Paste")
-
-# Paste info (browser limitation)
-if paste_btn:
-    st.info("Use Ctrl+V (browser security restricts direct paste)")
+# Input (controlled)
+st.session_state.text = st.text_area("✏️ Enter text:", value=st.session_state.text)
 
 # Buttons
 col1, col2 = st.columns(2)
@@ -62,9 +55,10 @@ with col1:
 with col2:
     clear_btn = st.button("Clear", use_container_width=True)
 
-# ✅ FIXED Clear
+# ✅ CLEAR FIX (clears everything)
 if clear_btn:
     st.session_state.text = ""
+    st.session_state.result = ""
     st.rerun()
 
 # Translation function
@@ -74,44 +68,43 @@ def translate(text, src, tgt):
     outputs = model.generate(**inputs)
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-# Translate logic
+# Translate
 if translate_btn:
-    if text.strip() == "":
+    if st.session_state.text.strip() == "":
         st.warning("⚠️ Please enter some text")
     elif source_lang == target_lang:
         st.warning("⚠️ Source and target languages must be different")
     else:
-        # store text
-        st.session_state.text = text
-
         src = languages[source_lang]
         tgt = languages[target_lang]
 
         with st.spinner("Translating... ⏳"):
             try:
-                result = translate(text, src, tgt)
+                result = translate(st.session_state.text, src, tgt)
             except:
-                # Pivot via English
                 if src != "en" and tgt != "en":
-                    step1 = translate(text, src, "en")
+                    step1 = translate(st.session_state.text, src, "en")
                     result = translate(step1, "en", tgt)
                 else:
                     st.error("❌ Translation not supported")
                     result = None
 
         if result:
-            st.markdown("### 🌐 Translated Text")
-            st.code(result)
+            st.session_state.result = result
 
-            # ✅ Prevent duplicate history
-            if not st.session_state.history or st.session_state.history[-1]["input"] != text:
+            # Save history (no duplicates)
+            if not st.session_state.history or st.session_state.history[-1]["input"] != st.session_state.text:
                 st.session_state.history.append({
-                    "input": f"{source_lang}: {text}",
+                    "input": f"{source_lang}: {st.session_state.text}",
                     "output": f"{target_lang}: {result}"
                 })
 
-            # limit history
             st.session_state.history = st.session_state.history[-10:]
+
+# ✅ SHOW RESULT (only if exists)
+if st.session_state.result:
+    st.markdown("### 🌐 Translated Text")
+    st.code(st.session_state.result)
 
 # History
 st.markdown("---")
