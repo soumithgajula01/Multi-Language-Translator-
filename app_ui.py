@@ -5,7 +5,7 @@ import pandas as pd
 # Page config
 st.set_page_config(page_title="Translator", page_icon="🌍", layout="centered")
 
-# 🎨 Modern UI Styling
+# 🎨 UI Styling
 st.markdown("""
 <style>
 .main {
@@ -71,6 +71,12 @@ if "text" not in st.session_state:
 if "result" not in st.session_state:
     st.session_state.result = ""
 
+if "source_lang" not in st.session_state:
+    st.session_state.source_lang = "English"
+
+if "target_lang" not in st.session_state:
+    st.session_state.target_lang = "French"
+
 # Model cache
 @st.cache_resource
 def load_model(src, tgt):
@@ -79,14 +85,27 @@ def load_model(src, tgt):
     model = MarianMTModel.from_pretrained(model_name)
     return tokenizer, model
 
-# Language selection
-col1, col2 = st.columns(2)
+# 🔁 Language selection + swap
+col1, col2, col3 = st.columns([4,1,4])
 
 with col1:
-    source_lang = st.selectbox("🌐 Source Language", list(languages.keys()))
+    source_lang = st.selectbox("🌐 Source", list(languages.keys()), key="source_lang")
 
 with col2:
-    target_lang = st.selectbox("🎯 Target Language", list(languages.keys()))
+    swap_btn = st.button("↔")
+
+with col3:
+    target_lang = st.selectbox("🎯 Target", list(languages.keys()), key="target_lang")
+
+# 🔁 Swap logic
+if swap_btn:
+    st.session_state.source_lang, st.session_state.target_lang = (
+        st.session_state.target_lang,
+        st.session_state.source_lang
+    )
+    st.session_state.text = st.session_state.result
+    st.session_state.result = ""
+    st.rerun()
 
 # Input
 st.session_state.text = st.text_area("✏️ Enter text:", value=st.session_state.text, height=120)
@@ -118,7 +137,7 @@ if translate_btn:
     if st.session_state.text.strip() == "":
         st.warning("⚠️ Please enter some text")
     elif source_lang == target_lang:
-        st.warning("⚠️ Source and target languages must be different")
+        st.warning("⚠️ Source and target must differ")
     else:
         src = languages[source_lang]
         tgt = languages[target_lang]
@@ -137,7 +156,6 @@ if translate_btn:
         if result:
             st.session_state.result = result
 
-            # Save history (no duplicates)
             if not st.session_state.history or st.session_state.history[-1]["input"] != st.session_state.text:
                 st.session_state.history.append({
                     "input": f"{source_lang}: {st.session_state.text}",
@@ -146,10 +164,17 @@ if translate_btn:
 
             st.session_state.history = st.session_state.history[-10:]
 
-# Output (better UI)
+# Output + Copy button
 if st.session_state.result:
     st.markdown("### 🌐 Translated Text")
     st.success(st.session_state.result)
+
+    # 📋 Real Copy Button
+    st.markdown(f"""
+        <button onclick="navigator.clipboard.writeText(`{st.session_state.result}`)">
+        📋 Copy
+        </button>
+    """, unsafe_allow_html=True)
 
 # History
 st.divider()
@@ -163,7 +188,6 @@ else:
         st.markdown(f"➡️ {item['output']}")
         st.markdown("---")
 
-    # Download CSV
     df = pd.DataFrame(st.session_state.history)
 
     st.download_button(
