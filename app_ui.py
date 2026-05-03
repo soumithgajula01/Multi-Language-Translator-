@@ -16,10 +16,25 @@ tokenizer, model = load_model()
 # Page config
 st.set_page_config(page_title="Translator", page_icon="🌍", layout="centered")
 
-# 🌙 Theme Toggle
-theme = st.sidebar.selectbox("🎨 Select Theme", ["Light", "Dark"])
+# 🔥 Session state
+if "text" not in st.session_state:
+    st.session_state.text = ""
 
-if theme == "Dark":
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+
+# 🌙 Theme Toggle Button (Top Right)
+col1, col2 = st.columns([8, 1])
+
+with col2:
+    if st.button("🌙"):
+        st.session_state.dark_mode = not st.session_state.dark_mode
+
+# Apply theme
+if st.session_state.dark_mode:
     st.markdown("""
         <style>
         body { background-color: #0E1117; color: white; }
@@ -31,12 +46,8 @@ if theme == "Dark":
 st.title("🌍 English → French Translator")
 st.markdown("---")
 
-# Initialize history
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-# Input
-text = st.text_area("✏️ Enter English text:")
+# Input (linked to session state)
+text = st.text_area("✏️ Enter English text:", value=st.session_state.text)
 
 # Buttons
 col1, col2 = st.columns(2)
@@ -47,11 +58,18 @@ with col1:
 with col2:
     clear_btn = st.button("Clear")
 
+# ✅ CLEAR FIX
+if clear_btn:
+    st.session_state.text = ""
+    st.rerun()
+
 # Translate
 if translate_btn:
     if text.strip() == "":
         st.warning("⚠️ Please enter some text")
     else:
+        st.session_state.text = text
+
         input_text = "translate English to French: " + text
         input_ids = tokenizer.encode(input_text, return_tensors="pt")
 
@@ -65,24 +83,16 @@ if translate_btn:
 
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        # Show output
         st.markdown("### 🇫🇷 Translated Text")
-        st.code(result, language="text")
+        st.code(result)
 
-        # 📋 Copy button (uses clipboard JS)
-        st.button("📋 Copy to Clipboard", on_click=lambda: st.write("Copied!"))
-
-        # Save to history
+        # Save history
         st.session_state.history.append({
             "input": text,
             "output": result
         })
 
-# Clear
-if clear_btn:
-    st.rerun()
-
-# 🧠 Show History
+# History
 st.markdown("---")
 st.subheader("🧠 Translation History")
 
@@ -94,7 +104,7 @@ else:
         st.markdown(f"**Output:** {item['output']}")
         st.markdown("---")
 
-    # 📊 Download History as CSV
+    # Download CSV
     df = pd.DataFrame(st.session_state.history)
 
     st.download_button(
