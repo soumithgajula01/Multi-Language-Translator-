@@ -72,7 +72,20 @@ if "source_lang" not in st.session_state:
 if "target_lang" not in st.session_state:
     st.session_state.target_lang = "French"
 
-# ✅ ONLY ONE LANGUAGE BLOCK (FIXED)
+if "swap_triggered" not in st.session_state:
+    st.session_state.swap_triggered = False
+
+# 🔁 Handle swap BEFORE widgets
+if st.session_state.swap_triggered:
+    st.session_state.source_lang, st.session_state.target_lang = (
+        st.session_state.target_lang,
+        st.session_state.source_lang
+    )
+    st.session_state.text = st.session_state.result
+    st.session_state.result = ""
+    st.session_state.swap_triggered = False
+
+# Language selection (swap in middle)
 col1, col2, col3 = st.columns([4,1,4])
 
 with col1:
@@ -93,15 +106,9 @@ with col3:
         key="target_lang"
     )
 
-# Swap logic
+# Swap trigger
 if swap_clicked:
-    temp = st.session_state.source_lang
-    st.session_state.source_lang = st.session_state.target_lang
-    st.session_state.target_lang = temp
-
-    st.session_state.text = st.session_state.result
-    st.session_state.result = ""
-
+    st.session_state.swap_triggered = True
     st.rerun()
 
 # Input
