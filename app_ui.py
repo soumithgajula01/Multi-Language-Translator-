@@ -16,61 +16,40 @@ tokenizer, model = load_model()
 # Page config
 st.set_page_config(page_title="Translator", page_icon="🌍", layout="centered")
 
-# 🔥 Session state
+# Session state
 if "text" not in st.session_state:
     st.session_state.text = ""
 
 if "history" not in st.session_state:
     st.session_state.history = []
 
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = False
-
-# 🌙 Theme Toggle Button (Top Right)
-col1, col2 = st.columns([8, 1])
-
-with col2:
-    if st.button("🌙"):
-        st.session_state.dark_mode = not st.session_state.dark_mode
-
-# Apply theme
-if st.session_state.dark_mode:
-    st.markdown("""
-        <style>
-        body { background-color: #0E1117; color: white; }
-        .stTextArea textarea { background-color: #262730; color: white; }
-        </style>
-    """, unsafe_allow_html=True)
-
 # Title
 st.title("🌍 English → French Translator")
 st.markdown("---")
 
-# Input (linked to session state)
-text = st.text_area("✏️ Enter English text:", value=st.session_state.text)
+# Input (linked to session state properly)
+st.session_state.text = st.text_area("✏️ Enter English text:", value=st.session_state.text)
 
-# Buttons
-col1, col2 = st.columns(2)
+# Buttons (aligned properly)
+col1, col2 = st.columns([1, 1])
 
 with col1:
-    translate_btn = st.button("Translate")
+    translate_btn = st.button("Translate", use_container_width=True)
 
 with col2:
-    clear_btn = st.button("Clear")
+    clear_btn = st.button("Clear", use_container_width=True)
 
-# ✅ CLEAR FIX
+# ✅ Clear fix
 if clear_btn:
     st.session_state.text = ""
     st.rerun()
 
 # Translate
 if translate_btn:
-    if text.strip() == "":
+    if st.session_state.text.strip() == "":
         st.warning("⚠️ Please enter some text")
     else:
-        st.session_state.text = text
-
-        input_text = "translate English to French: " + text
+        input_text = "translate English to French: " + st.session_state.text
         input_ids = tokenizer.encode(input_text, return_tensors="pt")
 
         with st.spinner("Translating... ⏳"):
@@ -88,7 +67,7 @@ if translate_btn:
 
         # Save history
         st.session_state.history.append({
-            "input": text,
+            "input": st.session_state.text,
             "output": result
         })
 
